@@ -1,0 +1,16 @@
+name: namelix-mcp
+
+services:
+  stdio:
+    build: .
+    image: namelix-mcp:latest
+    stdin_open: true
+    tty: true
+
+  http:
+    build: .
+    image: namelix-mcp:latest
+    ports:
+      - "3000:3000"
+    environment:
+      TRANSPORT: http

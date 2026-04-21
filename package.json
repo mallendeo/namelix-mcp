@@ -1,0 +1,24 @@
+{
+  "name": "namelix-mcp",
+  "version": "0.1.0",
+  "description": "MCP server exposing namelix.com's brand-name generator",
+  "type": "module",
+  "module": "src/stdio.ts",
+  "bin": {
+    "namelix-mcp": "src/stdio.ts"
+  },
+  "scripts": {
+    "start": "bun run src/stdio.ts",
+    "start:http": "bun run src/http.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}
