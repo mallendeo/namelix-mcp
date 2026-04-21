@@ -35,16 +35,19 @@ bun start:http   # http
 
 ### Docker
 
+Published image: `ghcr.io/mallendeo/namelix-mcp`.
+
 ```bash
-docker compose up http           # HTTP on localhost:3000/mcp
-docker compose run --rm stdio    # interactive stdio (for piping)
+docker run --rm -p 3000:3000 -e TRANSPORT=http ghcr.io/mallendeo/namelix-mcp:latest
+docker run --rm -i ghcr.io/mallendeo/namelix-mcp:latest   # stdio
 ```
 
-Or build and run directly:
+Build locally instead:
 
 ```bash
-docker build -t namelix-mcp .
-docker run --rm -p 3000:3000 -e TRANSPORT=http namelix-mcp
+docker compose up http           # HTTP on localhost:3000/mcp
+docker compose run --rm stdio    # interactive stdio
+docker build -t namelix-mcp .    # bare build
 ```
 
 The `TRANSPORT` env var (`stdio` | `http`) picks which entrypoint the image runs.
