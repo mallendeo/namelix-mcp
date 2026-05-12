@@ -1,6 +1,6 @@
 {
   "name": "namelix-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server exposing namelix.com's brand-name generator",
   "type": "module",
   "module": "src/stdio.ts",
