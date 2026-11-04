@@ -42,27 +42,17 @@ interface RawNamelixItem {
   [key: string]: unknown;
 }
 
-const STYLE_CODE: Record<Style, number> = {
-  auto: 0,
-  brandable: 1,
-  evocative: 2,
-  short_phrase: 3,
-  compound: 4,
-  alternate_spelling: 5,
-  non_english: 6,
-  real_words: 7,
-};
-
-const RANDOMNESS_CODE: Record<Randomness, number> = {
-  low: 0,
-  medium: 1,
-  high: 2,
-};
+interface NamelixGenerateResponse {
+  logos?: RawNamelixItem[];
+  new_bans?: unknown[];
+  premium?: unknown[];
+  premium_atom?: unknown[];
+}
 
 const DEFAULT_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15";
 
-const NAMELIX_URL = "https://namelix.com/app/load13.php";
+const NAMELIX_URL = "https://namelix.com/generate";
 const NAMES_PER_CALL = 5;
 const DEFAULT_MAX_RETRIES = 20;
 const DEFAULT_RETRY_DELAY_MS = 2000;
@@ -116,18 +106,20 @@ export class NamelixClient {
         ...Array.from(seen.values()).map((n) => n.name),
       ];
 
-      const items = await this.postWithRetry({
+      const response = await this.postWithRetry({
         keywords: input.keywords,
         description: input.description ?? "",
-        style: STYLE_CODE[style],
+        style: style,
         maxLength,
-        randomness: RANDOMNESS_CODE[randomness],
+        randomness: randomness,
         requireDomain: input.requireDomain ?? false,
-        extensions: tlds.join(","),
+        extensions: tlds,
         prevNames,
         page,
         seed,
       });
+
+      const items = response.logos ?? [];
 
       if (items.length > 0) allEmpty = false;
 
@@ -164,42 +156,42 @@ export class NamelixClient {
   private async postWithRetry(params: {
     keywords: string;
     description: string;
-    style: number;
+    style: string;
     maxLength: number;
-    randomness: number;
+    randomness: string;
     requireDomain: boolean;
-    extensions: string;
+    extensions: string[];
     prevNames: string[];
     page: number;
     seed: number;
-  }): Promise<RawNamelixItem[]> {
-    const body = new URLSearchParams({
+  }): Promise<NamelixGenerateResponse> {
+    const body = JSON.stringify({
       request_id: crypto.randomUUID(),
       keywords: params.keywords,
       description: params.description,
       blacklist: "",
       max_length: String(params.maxLength),
-      style: String(params.style),
-      random: String(params.randomness),
+      style: params.style,
+      random: params.randomness,
       extensions: params.extensions,
-      require_domains: params.requireDomain ? "true" : "false",
+      require_domains: params.requireDomain ? true : false,
       prev_names: params.prevNames.join("|"),
       saved: "",
-      premium_index: "0",
-      page: String(params.page),
-      num: String(NAMES_PER_CALL),
-      seed: String(params.seed),
+      premium_index: 0,
+      page: params.page,
+      num: NAMES_PER_CALL,
+      seed: params.seed,
       category: "",
-    }).toString();
+    });
 
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
       const res = await this.fetchFn(NAMELIX_URL, {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Type": "application/json",
           "X-Requested-With": "XMLHttpRequest",
           "User-Agent": this.userAgent,
-          Accept: "application/json, text/javascript, */*; q=0.01",
+          Accept: "application/json",
           Referer: "https://namelix.com/app/",
           Origin: "https://namelix.com",
         },
@@ -227,17 +219,19 @@ export class NamelixClient {
         );
       }
 
-      if (!Array.isArray(parsed)) {
-        throw new Error("namelix response was not an array");
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("namelix response was not an object");
       }
 
-      if (parsed.length > 0) return parsed as RawNamelixItem[];
+      const response = parsed as NamelixGenerateResponse;
+      const logos = response.logos ?? [];
+      if (logos.length > 0) return response;
 
-      if (attempt === this.maxRetries) return [];
+      if (attempt === this.maxRetries) return response;
       await this.sleep(this.retryDelayMs);
     }
 
-    return [];
+    return {};
   }
 }
 
